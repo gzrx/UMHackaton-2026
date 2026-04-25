@@ -17,7 +17,7 @@ def load_and_clean_data(filepath):
         print(f"Error loading data: {e}")
         return None
 
-def calculate_daily_running_balance(df):
+def calculate_daily_running_balance(df, initial_balance=0):
     """
     Aggregates net flow per day and calculates a cumulative running balance.
     """
@@ -30,7 +30,7 @@ def calculate_daily_running_balance(df):
     
     # Calculate Running Balance
     daily_summary = daily_summary.sort_values('Date')
-    daily_summary['Running_Balance'] = daily_summary['Net_Flow'].cumsum()
+    daily_summary['Running_Balance'] = daily_summary['Net_Flow'].cumsum() + initial_balance
     
     return daily_summary
 

@@ -22,6 +22,8 @@ def main():
     with st.sidebar:
         st.header("⚙️ Configuration")
         
+        initial_balance = st.number_input("Starting Cash Balance ($)", value=30000.0, step=1000.0)
+        
         # Initialize session state for API key if missing
         if "api_key_input" not in st.session_state:
             st.session_state.api_key_input = os.environ.get("GEMINI_API_KEY", "")
@@ -59,10 +61,21 @@ def main():
             os.environ["GEMINI_API_KEY"] = api_key
 
         uploaded_file = st.file_uploader("Upload Financial Data (CSV)", type=['csv'])
+        
+        # Clear scenarios if new file uploaded or crisis mode toggled
+        if "last_uploaded_file" not in st.session_state:
+            st.session_state.last_uploaded_file = None
+        if "last_crisis_mode" not in st.session_state:
+            st.session_state.last_crisis_mode = False
 
         st.header("🛠️ Demo Toggles")
         crisis_mode = st.toggle("🚨 Crisis Mode", help="Load the pre-configured high-risk dataset.")
         dumb_mode = st.toggle("🤖 Dumb Mode", help="Turn off AI explanations and just show the numbers.")
+
+        if st.session_state.last_uploaded_file != uploaded_file or st.session_state.last_crisis_mode != crisis_mode:
+            st.session_state.scenarios = []
+            st.session_state.last_uploaded_file = uploaded_file
+            st.session_state.last_crisis_mode = crisis_mode
 
     # --- Data Loading ---
     df = None
@@ -73,51 +86,81 @@ def main():
             st.warning("🚨 Crisis mock data not found at data/crisis_mock_data.csv")
     elif uploaded_file is not None:
         df = load_and_clean_data(uploaded_file)
-    else:
-        # Load sample data by default on app launch
-        if os.path.exists("data/sample_financial_data.csv"):
-            df = load_and_clean_data("data/sample_financial_data.csv")
-        else:
-            st.warning("Sample data not found. Please run `utils/data_generator.py` to generate it, or upload a CSV.")
+    # else:
+    #     # Load sample data by default on app launch
+    #     if os.path.exists("data/sample_financial_data.csv"):
+    #         df = load_and_clean_data("data/sample_financial_data.csv")
+    #     else:
+    #         st.warning("Sample data not found. Please run `utils/data_generator.py` to generate it, or upload a CSV.")
 
     # --- Main Area ---
     if df is not None:
-        # --- THE DECISION SIMULATOR (Requirement 1 & 6) ---
-        st.extender("🔮 Decision Simulator (What-If Analysis)", expended=False)
-        scenario_input = st.text_input(
-            "Describe a hypothetical change:", 
-            placeholder="e.g., 'Delay rent by 2 weeks' or 'Hire a developer for $4000'"
-        )
+        if "scenarios" not in st.session_state:
+            st.session_state.scenarios = []
 
-        if scenario_input:
-            with st.spinner("Analyzing scenario..."):
-                # 1. Ask the LLM to extract JSON
-                try:
-                    prompt = DECISION_SIMULATOR_PROMPT.format(user_input=scenario_input)
-                    response_text = get_gemini_response(prompt, response_mime_type="application/json")
-                    parsed_action = json.loads(response_text)
-                    
-                    st.success(f"Appended Scenario: {parsed_action['label']} (${parsed_action['amount']})")
-                    
-                    # 2. Append this row to our DataFrame
-                    future_date = pd.to_datetime('today') + pd.Timedelta(days=1)
-                    # Note: We map 'amount' to Credit/Debit for the forecaster
-                    new_row = {
-                        "Date": future_date, 
-                        "Description": f"SIMULATION: {parsed_action['label']}", 
-                        "Category": "Simulation",
-                        "Debit": abs(parsed_action["amount"]) if parsed_action["amount"] < 0 else 0,
-                        "Credit": parsed_action["amount"] if parsed_action["amount"] > 0 else 0
-                    }
-                    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-                except Exception as e:
-                    st.error(f"Failed to process scenario: {str(e)}")
-                    # Fallback to mock if AI fails
-                    parsed_action = {"amount": -4000, "label": "Hire a developer (Mock)"}
-                    st.info("Using mock action due to processing error.")
+        # --- THE DECISION SIMULATOR (Requirement 1 & 6) ---
+        with st.expander("🔮 Decision Simulator (What-If Analysis)", expanded=False):
+            st.markdown("**Try a demo scenario:**")
+            col_a, col_b = st.columns(2)
+            demo_scenario_1 = col_a.button("Delay rent by 2 weeks")
+            demo_scenario_2 = col_b.button("Hire a developer for $4000")
+            demo_scenario_3 = col_a.button("Take out a $20,000 loan")
+            demo_scenario_4 = col_b.button("Cut marketing budget by $2000")
+
+            with st.form("scenario_form"):
+                scenario_input = st.text_input(
+                    "Or describe a custom hypothetical change:", 
+                    placeholder="e.g., 'Sell equipment for $5000'"
+                )
+                submitted = st.form_submit_button("Simulate Custom Scenario")
+
+            active_input = None
+            if demo_scenario_1:
+                active_input = "Delay rent by 2 weeks"
+            elif demo_scenario_2:
+                active_input = "Hire a developer for $4000"
+            elif demo_scenario_3:
+                active_input = "Take out a $20,000 loan"
+            elif demo_scenario_4:
+                active_input = "Cut marketing budget by $2000"
+            elif submitted and scenario_input:
+                active_input = scenario_input
+
+            if active_input:
+                with st.spinner("Analyzing scenario..."):
+                    try:
+                        prompt = DECISION_SIMULATOR_PROMPT.format(user_input=active_input)
+                        response_text = get_gemini_response(prompt, response_mime_type="application/json")
+                        parsed_action = json.loads(response_text)
+                        st.session_state.scenarios.append(parsed_action)
+                        st.success(f"Appended Scenario: {parsed_action['label']} (${parsed_action['amount']})")
+                    except Exception as e:
+                        st.error(f"Failed to process scenario: {str(e)}")
+                        parsed_action = {"amount": -4000, "label": "Hire a developer (Mock)"}
+                        st.session_state.scenarios.append(parsed_action)
+                        st.info("Using mock action due to processing error.")
+
+            # Append all scenarios in session state
+            if st.session_state.scenarios:
+                if st.button("Clear Scenarios"):
+                    st.session_state.scenarios = []
+                    st.rerun()
+                else:
+                    new_rows = []
+                    for action in st.session_state.scenarios:
+                        st.write(f"✅ Active Simulation: **{action['label']}** (${action['amount']})")
+                        future_date = pd.to_datetime('today') + pd.Timedelta(days=1)
+                        new_rows.append({
+                            "Date": future_date, 
+                            "Description": f"SIMULATION: {action['label']}", 
+                            "Category": "Simulation",
+                            "Debit": abs(action["amount"]) if action["amount"] < 0 else 0,
+                            "Credit": action["amount"] if action["amount"] > 0 else 0
+                        })
+                    df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
 
         # 2. Calculate Balances
-        balance_df = calculate_daily_running_balance(df)
+        balance_df = calculate_daily_running_balance(df, initial_balance=initial_balance)
         
         # --- KPI Cards ---
         st.subheader("Financial Overview")
@@ -191,7 +234,7 @@ def main():
                             
                             # Display Result
                             st.markdown("---")
-                            st.markdown(ai_advice)
+                            st.markdown(ai_advice.replace("$", "\\$"), unsafe_allow_html=True)
     else:
         st.info("👈 Upload your 'sample_financial_data.csv' or turn on 'Crisis Mode' in the sidebar to begin analysis.")
 

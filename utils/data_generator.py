@@ -32,7 +32,7 @@ def generate_financial_data(filename='data/sample_financial_data.csv', scenario=
         
         # Adjust sales based on scenario
         if scenario == 'good':
-            sales_mean = 800
+            sales_mean = 3000
         elif scenario == 'crisis':
             sales_mean = 300
         else: # moderate/normal
@@ -95,7 +95,7 @@ def generate_financial_data(filename='data/sample_financial_data.csv', scenario=
                     'Description': 'Project Milestone Payment (BONUS)',
                     'Category': 'Consulting Fee',
                     'Debit': 0,
-                    'Credit': 25000
+                    'Credit': 100000
                 })
         else: # Moderate/Normal
             # Regular Consulting Fees in other months
