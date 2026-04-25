@@ -33,10 +33,16 @@
 ```text
 ├── app.py                     # Main Streamlit dashboard application
 ├── BudgetMind.md              # Original project spec and hackathon notes
-├── sample_financial_data.csv  # Mock CSV financial data to use
+├── README.md                  # Project documentation
+├── .gitignore                 # Git ignore rules
 ├── core/
 │   ├── forecaster.py          # Data ingestion, cleaning, and financial math logic
 │   └── gemini_client.py       # Integration with the Google Gemini API
+├── data/                      # CSV datasets for analysis
+│   ├── crisis_mock_data.csv   # Mock data for crisis detection
+│   ├── good_performance.csv   # Mock data for healthy financial scenarios 
+│   ├── moderate_performance.csv # Mock data for average financial scenarios
+│   └── sample_financial_data.csv # Base sample financial data
 ├── prompts/
 │   ├── system_prompt.py             # Base system instructions for Gemini
 │   └── decision_simulator_prompt.py # Prompts for What-If NLP analysis
