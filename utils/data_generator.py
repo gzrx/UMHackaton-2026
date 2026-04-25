@@ -94,7 +94,7 @@ def generate_financial_data():
     df = df.sort_values('Date')
     
     # Write to CSV
-    output_file = 'sample_financial_data.csv'
+    output_file = 'data/sample_financial_data.csv'
     df.to_csv(output_file, index=False)
     print(f"Successfully generated {len(df)} transactions to {output_file}")
     
