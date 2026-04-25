@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![Gemini API](https://img.shields.io/badge/Google-Gemini%201.5%20Pro-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
+[![Gemini API](https://img.shields.io/badge/Google-Gemini%203.1%20Flash%20Lite%20Preview-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
 
 **BudgetMind** is a "CFO in a Box" designed specifically for Small and Medium Enterprises (SMEs). Standard accounting software only records history—BudgetMind looks forward. It connects to financial data to predict cash shortfalls up to 90 days in advance and leverages **Google's Gemini AI** to explain *why* a crisis is looming and suggest actionable, context-aware strategies to avoid it.
 
@@ -16,7 +16,7 @@
 ## ✨ Key Features
 
 1. **Predictive Cashflow Visuals:** Interactive graphs forecasting your "Projected Cash Balance" against safe operating threshold levels.
-2. **AI-Powered Crisis Advisor:** Uses **Gemini 1.5 Pro** to analyze financial topologies, pinpointing exact causes of impending shortfalls (e.g., late clients paired with upcoming large payments).
+2. **AI-Powered Crisis Advisor:** Uses **Gemini 3.1 Flash Lite Preview** to analyze financial topologies, pinpointing exact causes of impending shortfalls (e.g., late clients paired with upcoming large payments).
 3. **Decision Simulator (What-If Analysis):** Input hypothetical scenarios (e.g., "What if I hire a new developer for $4000/month?") to instantly see how this impacts your financial runway.
 4. **Actionable Recommendations:** Get context-specific solutions like offering an early payment discount, managing vendor terms, or slicing specific expenses.
 5. **Dumb vs. Smart Mode:** Toggle AI explanations off to see only raw calculations or run in "Crisis Mode" to experience a simulated financial drop.
@@ -26,7 +26,7 @@
 * **Frontend:** Streamlit (Dynamic interactive dashboard)
 * **Data Processing:** Pandas & NumPy (Data aggregation, running balance calculations)
 * **Visualization:** Altair (Time-series line charts with threshold rules)
-* **AI/Logic Layer:** Python + Google Generative AI SDK, powered by **Gemini 1.5 Pro** utilizing system instructions.
+* **AI/Logic Layer:** Python + Google Generative AI SDK, powered by **Gemini 3.1 Flash Lite Preview** utilizing system instructions.
 
 ## 📁 Repository Structure
 
