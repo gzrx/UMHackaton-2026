@@ -25,7 +25,7 @@ A modular Streamlit application architecture for BudgetMind, centralizing data p
 3. Ping the Gemini API with mock negative balance data and assert a valid response is returned.
 
 **Decisions**
-- Use official `google-generativeai` SDK for easier prompt management.
+- Use official `google-genai` SDK for easier prompt management.
 - Strictly enforce simple CSV formats for now.
 - Isolate the data processing logic entirely from Streamlit so it can easily be migrated to a backend service like FastAPI in the future.
 - Use explicit configuration classes rather than pulling `os.getenv` randomly across files for better security audits.

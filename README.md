@@ -56,7 +56,7 @@ Clone the repository and install the required dependencies:
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/BudgetMind.git
+git clone https://github.com/gzrx/BudgetMind.git
 cd BudgetMind
 
 # Create a virtual environment

@@ -7,7 +7,7 @@ from google import genai
 from datetime import datetime, timedelta
 
 from core.forecaster import load_and_clean_data, calculate_daily_running_balance, detect_shortfalls
-from core.gemini_client import get_financial_advice
+from core.gemini_client import get_financial_advice, get_gemini_response
 from prompts.system_prompt import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
 from prompts.decision_simulator_prompt import DECISION_SIMULATOR_PROMPT
 
@@ -73,11 +73,17 @@ def main():
             st.warning("🚨 Crisis mock data not found at data/crisis_mock_data.csv")
     elif uploaded_file is not None:
         df = load_and_clean_data(uploaded_file)
+    else:
+        # Load sample data by default on app launch
+        if os.path.exists("data/sample_financial_data.csv"):
+            df = load_and_clean_data("data/sample_financial_data.csv")
+        else:
+            st.warning("Sample data not found. Please run `utils/data_generator.py` to generate it, or upload a CSV.")
 
     # --- Main Area ---
     if df is not None:
         # --- THE DECISION SIMULATOR (Requirement 1 & 6) ---
-        st.subheader("🔮 Decision Simulator (What-If Analysis)")
+        st.extender("🔮 Decision Simulator (What-If Analysis)", expended=False)
         scenario_input = st.text_input(
             "Describe a hypothetical change:", 
             placeholder="e.g., 'Delay rent by 2 weeks' or 'Hire a developer for $4000'"
@@ -86,18 +92,29 @@ def main():
         if scenario_input:
             with st.spinner("Analyzing scenario..."):
                 # 1. Ask the LLM to extract JSON
-                # extracted_str = extract_json_from_text(scenario_input) 
-                # parsed_action = json.loads(extracted_str)
-                
-                # Mock extracted response for prototype
-                parsed_action = {"amount": -4000, "label": "Hire a developer"}
-                
-                st.success(f"Appended Scenario: {parsed_action['label']} ({parsed_action['amount']})")
-                
-                # 2. Append this row to our DataFrame for a future date (e.g., tomorrow)
-                future_date = pd.to_datetime('today') + pd.Timedelta(days=1)
-                new_row = pd.DataFrame([{"Date": future_date, "Description": parsed_action["label"], "Amount": parsed_action["amount"], "Category": "Simulation"}])
-                df = pd.concat([df, new_row], ignore_index=True)
+                try:
+                    prompt = DECISION_SIMULATOR_PROMPT.format(user_input=scenario_input)
+                    response_text = get_gemini_response(prompt, response_mime_type="application/json")
+                    parsed_action = json.loads(response_text)
+                    
+                    st.success(f"Appended Scenario: {parsed_action['label']} (${parsed_action['amount']})")
+                    
+                    # 2. Append this row to our DataFrame
+                    future_date = pd.to_datetime('today') + pd.Timedelta(days=1)
+                    # Note: We map 'amount' to Credit/Debit for the forecaster
+                    new_row = {
+                        "Date": future_date, 
+                        "Description": f"SIMULATION: {parsed_action['label']}", 
+                        "Category": "Simulation",
+                        "Debit": abs(parsed_action["amount"]) if parsed_action["amount"] < 0 else 0,
+                        "Credit": parsed_action["amount"] if parsed_action["amount"] > 0 else 0
+                    }
+                    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+                except Exception as e:
+                    st.error(f"Failed to process scenario: {str(e)}")
+                    # Fallback to mock if AI fails
+                    parsed_action = {"amount": -4000, "label": "Hire a developer (Mock)"}
+                    st.info("Using mock action due to processing error.")
 
         # 2. Calculate Balances
         balance_df = calculate_daily_running_balance(df)
@@ -130,7 +147,7 @@ def main():
         # $0 Threshold Rule
         rule = alt.Chart(pd.DataFrame({'y': [0]})).mark_rule(color='red', strokeDash=[4,4], strokeWidth=2).encode(y='y')
         
-        st.altair_chart(line_chart + rule, use_container_width=True)
+        st.altair_chart(line_chart + rule, width='stretch')
         
         # --- Anomaly Detection Placeholder ---
         # anomalies = detect_anomalies(df)

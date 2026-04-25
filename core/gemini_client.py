@@ -1,47 +1,39 @@
 import os
-import google.genai as genai
-from google.api_core.exceptions import DeadlineExceeded
+from google import genai
+from google.genai import types
+
+def get_gemini_response(prompt, system_instruction=None, response_mime_type=None):
+    """
+    Generic helper to get a response from Gemini.
+    """
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY environment variable not set.")
+    
+    client = genai.Client(api_key=api_key)
+    
+    config = {}
+    if system_instruction:
+        config["system_instruction"] = system_instruction
+    if response_mime_type:
+        config["response_mime_type"] = response_mime_type
+    
+    response = client.models.generate_content(
+        model="gemini-3.1-flash-lite-preview",
+        contents=prompt,
+        config=config
+    )
+    return response.text
 
 def get_financial_advice(system_prompt, user_data_json):
     """
     Calls the Google Gemini API to get financial advice based on a system prompt and user data.
-    
-    Args:
-        system_prompt (str): The persona and instructions for the AI.
-        user_data_json (str): The JSON string containing the financial shortfall data.
-
-    Returns:
-        str: The Markdown text response from the Gemini API.
     """
-    # 1. Setup API Key (The official SDK handles the Content-Type and Authorization headers internally)
-    api_key = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY")
-    # api_key = "AIzaSyANUd_SHTHLN3FsOMeTwneac9qDl1-8hvU"
-    if not api_key or api_key == "YOUR_GEMINI_API_KEY":
-        return "Error: GEMINI_API_KEY environment variable not set."
-    
-    genai.configure(api_key=api_key)
-
     try:
-        # 2. Use Gemini 1.5 Pro to support System Instructions
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-pro",
-            system_instruction=system_prompt
-        )
-
-        # 3. Call the API with the user data and a network timeout
-        # request_options allows setting the timeout in seconds for the gRPC/REST call
-        response = model.generate_content(
-            user_data_json,
-            request_options={"timeout": 30.0}
-        )
-
-        # 4. Handle JSON internally and return ONLY the text content
-        return response.text
-
-    except DeadlineExceeded:
-        return "Error: API request timed out. Please check your network connection and try again."
+        return get_gemini_response(user_data_json, system_instruction=system_prompt)
     except Exception as e:
         return f"Error: An unexpected issue occurred during the API call: {str(e)}"
+
 
 if __name__ == "__main__":
     # Example usage for testing
