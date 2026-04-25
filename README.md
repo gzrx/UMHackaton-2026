@@ -69,7 +69,7 @@ source venv/bin/activate
 venv\Scripts\activate
 
 # Install dependencies
-pip install streamlit pandas altair google-generativeai
+pip install streamlit pandas altair google-genai
 ```
 
 ### 3. Configure API Key

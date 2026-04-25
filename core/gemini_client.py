@@ -1,5 +1,5 @@
 import os
-import google.generativeai as genai
+import google.genai as genai
 from google.api_core.exceptions import DeadlineExceeded
 
 def get_financial_advice(system_prompt, user_data_json):
